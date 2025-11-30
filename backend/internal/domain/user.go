@@ -6,7 +6,7 @@ import (
 )
 
 type User struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Username  string    `json:"username"`
 	Password  string    `json:"-"` // Never return password
 	Role      string    `json:"role"`
@@ -17,5 +17,5 @@ type User struct {
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByUsername(ctx context.Context, username string) (*User, error)
-	GetByID(ctx context.Context, id int64) (*User, error)
+	GetByID(ctx context.Context, id string) (*User, error)
 }

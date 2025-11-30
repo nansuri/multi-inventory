@@ -7,11 +7,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	pgdriver "gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	gormschema "gorm.io/gorm/schema"
 )
 
 type DB struct {
 	Pool   *pgxpool.Pool
 	Schema string
+	Gorm   *gorm.DB
 }
 
 func NewDB() (*DB, error) {
@@ -49,12 +53,21 @@ func NewDB() (*DB, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	schema := os.Getenv("DB_SCHEMA")
-	if schema == "" {
-		schema = "public"
+	dbSchema := os.Getenv("DB_SCHEMA")
+	if dbSchema == "" {
+		dbSchema = "public"
 	}
 
-	return &DB{Pool: pool, Schema: schema}, nil
+	gormDB, err := gorm.Open(pgdriver.Open(dsn), &gorm.Config{
+		NamingStrategy: gormschema.NamingStrategy{
+			TablePrefix: dbSchema + ".",
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to open gorm: %w", err)
+	}
+
+	return &DB{Pool: pool, Schema: dbSchema, Gorm: gormDB}, nil
 }
 
 func (db *DB) Close() {
@@ -64,70 +77,22 @@ func (db *DB) Close() {
 // AutoMigrate creates core tables if they do not exist.
 // This is a simple MVP-friendly migration without external tools.
 func (db *DB) AutoMigrate(ctx context.Context) error {
-	// Detect existing ID types (to avoid FK dtype mismatch with pre-existing tables)
-	userIDType := detectColumnType(ctx, db, "users", "id", "bigint")
-	itemIDType := detectColumnType(ctx, db, "items", "id", "bigint")
-
-	// Ensure schema exists
+	// Ensure schema and extension
 	if _, err := db.Pool.Exec(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", db.Schema)); err != nil {
 		return fmt.Errorf("failed to ensure schema: %w", err)
 	}
-
-	// Create base tables first (users, items) in target schema
-	baseTables := []string{
-		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.users (
-			id BIGSERIAL PRIMARY KEY,
-			username TEXT NOT NULL UNIQUE,
-			password TEXT NOT NULL,
-			role TEXT NOT NULL DEFAULT 'user',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);`, db.Schema),
-		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.items (
-			id BIGSERIAL PRIMARY KEY,
-			name TEXT NOT NULL,
-			barcode TEXT NOT NULL UNIQUE,
-			price DECIMAL(10, 2) NOT NULL,
-			location TEXT,
-			is_halal BOOLEAN DEFAULT TRUE,
-			quantity INTEGER NOT NULL DEFAULT 0,
-			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);`, db.Schema),
-	}
-	for _, sql := range baseTables {
-		if _, err := db.Pool.Exec(ctx, sql); err != nil {
-			return fmt.Errorf("automigrate base tables failed: %w", err)
-		}
+	if err := db.Gorm.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto").Error; err != nil {
+		return fmt.Errorf("failed to ensure pgcrypto: %w", err)
 	}
 
-	// Normalize detected types for FK columns (Postgres uses 'integer' or 'bigint')
-	fkUserType := mapTypeForFK(userIDType)
-	fkItemType := mapTypeForFK(itemIDType)
-
-	salesOrdersSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.sales_orders (
-		id BIGSERIAL PRIMARY KEY,
-		user_id %s REFERENCES %s.users(id),
-		total_price DECIMAL(10, 2) NOT NULL,
-		status TEXT NOT NULL DEFAULT 'pending',
-		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);`, db.Schema, fkUserType, db.Schema)
-
-	salesOrderItemsSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.sales_order_items (
-		id BIGSERIAL PRIMARY KEY,
-		sales_order_id BIGINT REFERENCES %s.sales_orders(id) ON DELETE CASCADE,
-		item_id %s REFERENCES %s.items(id),
-		quantity INTEGER NOT NULL,
-		price_at_sale DECIMAL(10, 2) NOT NULL,
-		is_fulfilled BOOLEAN DEFAULT FALSE
-	);`, db.Schema, db.Schema, fkItemType, db.Schema)
-
-	if _, err := db.Pool.Exec(ctx, salesOrdersSQL); err != nil {
-		return fmt.Errorf("automigrate sales_orders failed: %w (user id type detected: %s)", err, userIDType)
-	}
-	if _, err := db.Pool.Exec(ctx, salesOrderItemsSQL); err != nil {
-		return fmt.Errorf("automigrate sales_order_items failed: %w (item id type detected: %s)", err, itemIDType)
+	// GORM automigrate
+	if err := db.Gorm.WithContext(ctx).AutoMigrate(
+		&UserModel{},
+		&ItemModel{},
+		&SalesOrderModel{},
+		&SalesOrderItemModel{},
+	); err != nil {
+		return fmt.Errorf("gorm automigrate failed: %w", err)
 	}
 	return nil
 }

@@ -56,10 +56,10 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 	return &user, nil
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	usersTable := fmt.Sprintf("%s.users", r.db.Schema)
 	query := fmt.Sprintf(`
-		SELECT id, username, password, role, created_at, updated_at
+		SELECT id::text, username, password, role, created_at, updated_at
 		FROM %s
 		WHERE id = $1
 	`, usersTable)
