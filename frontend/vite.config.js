@@ -1,18 +1,17 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
 import { VantResolver } from 'unplugin-vue-components/resolvers'
 import AutoImport from 'unplugin-auto-import/vite'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  // Comma-separated list of additional allowed hosts for preview (production domain etc.)
-  const extraHosts = (env.VITE_ALLOWED_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean)
-  const allowedHosts = ['inventory.justnansuri.com', ...extraHosts]
-  return {
+// Allow adding extra hosts via environment variable VITE_ALLOWED_HOSTS (comma separated)
+const extraHostsEnv = (process.env.VITE_ALLOWED_HOSTS || '').split(',').map(h => h.trim()).filter(Boolean)
+const allowedHosts = ['inventory.justnansuri.com', ...extraHostsEnv]
+
+export default defineConfig({
   plugins: [
     vue(),
     AutoImport({
@@ -28,6 +27,6 @@ export default defineConfig(({ mode }) => {
     }
   },
   preview: {
-    allowedHosts
+    allowedHosts,
   }
 })
