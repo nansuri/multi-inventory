@@ -19,7 +19,7 @@ func NewSalesHandler(salesService *application.SalesService) *SalesHandler {
 }
 
 type CreateOrderRequest struct {
-	UserID int64 `json:"user_id"` // In real app, get from context/token
+	UserID string `json:"user_id"` // In real app, get from context/token (UUID or numeric as string)
 	Items  []struct {
 		ItemID   int64 `json:"item_id"`
 		Quantity int   `json:"quantity"`
@@ -34,9 +34,7 @@ func (h *SalesHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// For MVP, if UserID is missing, use a dummy ID or 1
-	if req.UserID == 0 {
-		req.UserID = 1
-	}
+	// If missing, leave empty to allow NULL FK (column is nullable)
 
 	order, err := h.salesService.CreateOrder(r.Context(), req.UserID, req.Items)
 	if err != nil {

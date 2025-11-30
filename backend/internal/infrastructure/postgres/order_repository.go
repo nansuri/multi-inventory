@@ -29,7 +29,13 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.SalesOrder) 
 		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
-	err = tx.QueryRow(ctx, query, order.UserID, order.TotalPrice, order.Status).Scan(&order.ID, &order.CreatedAt, &order.UpdatedAt)
+	var argUser any
+	if order.UserID == "" {
+		argUser = nil // insert NULL if not provided
+	} else {
+		argUser = order.UserID
+	}
+	err = tx.QueryRow(ctx, query, argUser, order.TotalPrice, order.Status).Scan(&order.ID, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create order: %w", err)
 	}
@@ -53,7 +59,7 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.SalesOrder) 
 
 func (r *OrderRepository) GetByID(ctx context.Context, id int64) (*domain.SalesOrder, error) {
 	query := `
-		SELECT id, user_id, total_price, status, created_at, updated_at
+		SELECT id, user_id::text, total_price, status, created_at, updated_at
 		FROM sales_orders
 		WHERE id = $1
 	`
@@ -94,7 +100,7 @@ func (r *OrderRepository) GetByID(ctx context.Context, id int64) (*domain.SalesO
 
 func (r *OrderRepository) List(ctx context.Context) ([]*domain.SalesOrder, error) {
 	query := `
-		SELECT id, user_id, total_price, status, created_at, updated_at
+		SELECT id, user_id::text, total_price, status, created_at, updated_at
 		FROM sales_orders
 		ORDER BY created_at DESC
 	`

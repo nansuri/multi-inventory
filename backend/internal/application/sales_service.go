@@ -18,7 +18,7 @@ func NewSalesService(orderRepo domain.OrderRepository, itemRepo domain.ItemRepos
 	}
 }
 
-func (s *SalesService) CreateOrder(ctx context.Context, userID int64, items []struct {
+func (s *SalesService) CreateOrder(ctx context.Context, userID string, items []struct {
 	ItemID   int64 `json:"item_id"`
 	Quantity int   `json:"quantity"`
 }) (*domain.SalesOrder, error) {
