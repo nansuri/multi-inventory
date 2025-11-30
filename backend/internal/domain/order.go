@@ -7,7 +7,7 @@ import (
 
 type SalesOrder struct {
 	ID         int64             `json:"id"`
-	UserID     int64             `json:"user_id"`
+	UserID     string            `json:"user_id"`
 	TotalPrice float64           `json:"total_price"`
 	Status     string            `json:"status"` // pending, completed, cancelled
 	CreatedAt  time.Time         `json:"created_at"`

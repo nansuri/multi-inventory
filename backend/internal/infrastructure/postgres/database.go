@@ -138,6 +138,8 @@ func mapTypeForFK(dtype string) string {
 		return "INTEGER"
 	case "bigint":
 		return "BIGINT"
+	case "uuid":
+		return "UUID"
 	default:
 		// Default to BIGINT for safety; Postgres will error if mismatched.
 		return "BIGINT"
