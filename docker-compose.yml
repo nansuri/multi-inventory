@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # Backend service (optional for local dev if running go run locally, but good for full stack)
+  # Backend service connecting to existing Postgres (qa_platform_db)
   backend:
     build: 
       context: ./backend
@@ -10,13 +8,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=postgres
+      - DB_HOST=qa_platform_db
       - DB_USER=postgres
       - DB_PASSWORD=Lp9xBvsfKDApBdpbMq6Euwvf4DBF3uz55Mw
-      - DB_NAME=inventory_db
+      - DB_NAME=qa_platform
       - DB_PORT=5432
     networks:
-      - inventory_net
+      - qa_platform_network
     restart: on-failure
 
   # Frontend service (optional for local dev)
@@ -30,8 +28,7 @@ services:
     depends_on:
       - backend
     networks:
-      - inventory_net
-
+      - qa_platform_network
 networks:
-  inventory_net:
-    driver: bridge
+  qa_platform_network:
+    external: true
