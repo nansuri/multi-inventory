@@ -32,3 +32,4 @@ services:
 networks:
   qa_platform_network:
     external: true
+    name: probatio-in-harmonia_qa_platform_network
