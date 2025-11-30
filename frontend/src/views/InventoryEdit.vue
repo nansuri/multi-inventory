@@ -78,6 +78,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showToast, showConfirmDialog } from 'vant';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const route = useRoute();
 const router = useRouter();
@@ -103,7 +104,7 @@ const onScan = (code) => {
 const loadItem = async () => {
   if (!isEdit.value) return;
   try {
-    const response = await fetch(`http://localhost:8080/api/inventory/${route.params.id}`);
+    const response = await fetch(`${apiBase}/api/inventory/${route.params.id}`);
     if (!response.ok) throw new Error('Failed to load item');
     const data = await response.json();
     form.value = data;
@@ -116,8 +117,8 @@ const onSubmit = async () => {
   loading.value = true;
   try {
     const url = isEdit.value 
-      ? `http://localhost:8080/api/inventory/${route.params.id}`
-      : 'http://localhost:8080/api/inventory';
+      ? `${apiBase}/api/inventory/${route.params.id}`
+      : `${apiBase}/api/inventory`;
     
     const method = isEdit.value ? 'PUT' : 'POST';
 
@@ -150,7 +151,7 @@ const onDelete = () => {
     })
     .then(async () => {
         try {
-            const response = await fetch(`http://localhost:8080/api/inventory/${route.params.id}`, {
+            const response = await fetch(`${apiBase}/api/inventory/${route.params.id}`, {
                 method: 'DELETE',
             });
             if (!response.ok) throw new Error('Failed to delete');

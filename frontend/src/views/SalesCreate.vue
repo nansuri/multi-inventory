@@ -41,6 +41,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const router = useRouter();
 const cart = ref([]);
@@ -74,7 +75,7 @@ const onScan = async (code) => {
         // Wait, I didn't add GetByBarcode in Handler. I should fix that or just use List for now.
         // Let's use List for now to save time, or just fetch list once and cache.
         
-        const response = await fetch('http://localhost:8080/api/inventory');
+        const response = await fetch(`${apiBase}/api/inventory`);
         if (!response.ok) throw new Error('Failed to fetch inventory');
         const items = await response.json();
         const item = items.find(i => i.barcode === code);
@@ -114,7 +115,7 @@ const onSubmit = async () => {
     loading.value = true;
     try {
         const user = JSON.parse(localStorage.getItem('user'));
-        const response = await fetch('http://localhost:8080/api/sales', {
+        const response = await fetch(`${apiBase}/api/sales`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

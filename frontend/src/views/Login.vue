@@ -41,6 +41,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast, showSuccessToast, showFailToast } from 'vant';
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const username = ref('');
 const password = ref('');
@@ -50,7 +51,7 @@ const router = useRouter();
 const onSubmit = async (values) => {
   loading.value = true;
   try {
-    const response = await fetch('http://localhost:8080/api/auth/login', {
+    const response = await fetch(`${apiBase}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -49,6 +49,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast, showSuccessToast, showFailToast } from 'vant';
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const username = ref('');
 const password = ref('');
@@ -61,7 +62,7 @@ const validateConfirm = (val) => val === password.value;
 const onSubmit = async (values) => {
   loading.value = true;
   try {
-    const response = await fetch('http://localhost:8080/api/auth/register', {
+    const response = await fetch(`${apiBase}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
