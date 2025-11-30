@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci || npm install
@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Run stage (vite preview)
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY --from=builder /app/dist /app/dist
 RUN npm install -g vite
