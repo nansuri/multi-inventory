@@ -1,5 +1,8 @@
+-- Enable UUID generation
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user',
@@ -21,7 +24,7 @@ CREATE TABLE IF NOT EXISTS items (
 
 CREATE TABLE IF NOT EXISTS sales_orders (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id),
+    user_id UUID REFERENCES users(id),
     total_price DECIMAL(10, 2) NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending', -- pending, completed, cancelled
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

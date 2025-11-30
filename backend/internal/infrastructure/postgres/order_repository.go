@@ -24,11 +24,12 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.SalesOrder) 
 	defer tx.Rollback(ctx)
 
 	// Create Order
-	query := `
-		INSERT INTO sales_orders (user_id, total_price, status, created_at, updated_at)
+	salesOrdersTable := fmt.Sprintf("%s.sales_orders", r.db.Schema)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (user_id, total_price, status, created_at, updated_at)
 		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at
-	`
+	`, salesOrdersTable)
 	var argUser any
 	if order.UserID == "" {
 		argUser = nil // insert NULL if not provided
@@ -41,11 +42,12 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.SalesOrder) 
 	}
 
 	// Create Order Items
-	itemQuery := `
-		INSERT INTO sales_order_items (sales_order_id, item_id, quantity, price_at_sale, is_fulfilled)
+	salesOrderItemsTable := fmt.Sprintf("%s.sales_order_items", r.db.Schema)
+	itemQuery := fmt.Sprintf(`
+		INSERT INTO %s (sales_order_id, item_id, quantity, price_at_sale, is_fulfilled)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
-	`
+	`, salesOrderItemsTable)
 	for _, item := range order.Items {
 		err = tx.QueryRow(ctx, itemQuery, order.ID, item.ItemID, item.Quantity, item.PriceAtSale, item.IsFulfilled).Scan(&item.ID)
 		if err != nil {
@@ -58,11 +60,12 @@ func (r *OrderRepository) Create(ctx context.Context, order *domain.SalesOrder) 
 }
 
 func (r *OrderRepository) GetByID(ctx context.Context, id int64) (*domain.SalesOrder, error) {
-	query := `
+	salesOrdersTable := fmt.Sprintf("%s.sales_orders", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, user_id::text, total_price, status, created_at, updated_at
-		FROM sales_orders
+		FROM %s
 		WHERE id = $1
-	`
+	`, salesOrdersTable)
 	var order domain.SalesOrder
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
 		&order.ID, &order.UserID, &order.TotalPrice, &order.Status, &order.CreatedAt, &order.UpdatedAt,
@@ -75,12 +78,14 @@ func (r *OrderRepository) GetByID(ctx context.Context, id int64) (*domain.SalesO
 	}
 
 	// Get Items
-	itemsQuery := `
+	salesOrderItemsTable := fmt.Sprintf("%s.sales_order_items", r.db.Schema)
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	itemsQuery := fmt.Sprintf(`
 		SELECT soi.id, soi.sales_order_id, soi.item_id, soi.quantity, soi.price_at_sale, soi.is_fulfilled, i.name
-		FROM sales_order_items soi
-		JOIN items i ON soi.item_id = i.id
+		FROM %s soi
+		JOIN %s i ON soi.item_id = i.id
 		WHERE soi.sales_order_id = $1
-	`
+	`, salesOrderItemsTable, itemsTable)
 	rows, err := r.db.Pool.Query(ctx, itemsQuery, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order items: %w", err)
@@ -99,11 +104,12 @@ func (r *OrderRepository) GetByID(ctx context.Context, id int64) (*domain.SalesO
 }
 
 func (r *OrderRepository) List(ctx context.Context) ([]*domain.SalesOrder, error) {
-	query := `
+	salesOrdersTable := fmt.Sprintf("%s.sales_orders", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, user_id::text, total_price, status, created_at, updated_at
-		FROM sales_orders
+		FROM %s
 		ORDER BY created_at DESC
-	`
+	`, salesOrdersTable)
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list orders: %w", err)

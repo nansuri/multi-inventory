@@ -10,7 +10,8 @@ import (
 )
 
 type DB struct {
-	Pool *pgxpool.Pool
+	Pool   *pgxpool.Pool
+	Schema string
 }
 
 func NewDB() (*DB, error) {
@@ -48,7 +49,12 @@ func NewDB() (*DB, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	return &DB{Pool: pool}, nil
+	schema := os.Getenv("DB_SCHEMA")
+	if schema == "" {
+		schema = "public"
+	}
+
+	return &DB{Pool: pool, Schema: schema}, nil
 }
 
 func (db *DB) Close() {
@@ -62,17 +68,22 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 	userIDType := detectColumnType(ctx, db, "users", "id", "bigint")
 	itemIDType := detectColumnType(ctx, db, "items", "id", "bigint")
 
-	// Create base tables first (users, items)
+	// Ensure schema exists
+	if _, err := db.Pool.Exec(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", db.Schema)); err != nil {
+		return fmt.Errorf("failed to ensure schema: %w", err)
+	}
+
+	// Create base tables first (users, items) in target schema
 	baseTables := []string{
-		`CREATE TABLE IF NOT EXISTS users (
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.users (
 			id BIGSERIAL PRIMARY KEY,
 			username TEXT NOT NULL UNIQUE,
 			password TEXT NOT NULL,
 			role TEXT NOT NULL DEFAULT 'user',
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);`,
-		`CREATE TABLE IF NOT EXISTS items (
+		);`, db.Schema),
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.items (
 			id BIGSERIAL PRIMARY KEY,
 			name TEXT NOT NULL,
 			barcode TEXT NOT NULL UNIQUE,
@@ -82,7 +93,7 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 			quantity INTEGER NOT NULL DEFAULT 0,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-		);`,
+		);`, db.Schema),
 	}
 	for _, sql := range baseTables {
 		if _, err := db.Pool.Exec(ctx, sql); err != nil {
@@ -94,23 +105,23 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 	fkUserType := mapTypeForFK(userIDType)
 	fkItemType := mapTypeForFK(itemIDType)
 
-	salesOrdersSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS sales_orders (
+	salesOrdersSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.sales_orders (
 		id BIGSERIAL PRIMARY KEY,
-		user_id %s REFERENCES users(id),
+		user_id %s REFERENCES %s.users(id),
 		total_price DECIMAL(10, 2) NOT NULL,
 		status TEXT NOT NULL DEFAULT 'pending',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-	);`, fkUserType)
+	);`, db.Schema, fkUserType, db.Schema)
 
-	salesOrderItemsSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS sales_order_items (
+	salesOrderItemsSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.sales_order_items (
 		id BIGSERIAL PRIMARY KEY,
-		sales_order_id BIGINT REFERENCES sales_orders(id) ON DELETE CASCADE,
-		item_id %s REFERENCES items(id),
+		sales_order_id BIGINT REFERENCES %s.sales_orders(id) ON DELETE CASCADE,
+		item_id %s REFERENCES %s.items(id),
 		quantity INTEGER NOT NULL,
 		price_at_sale DECIMAL(10, 2) NOT NULL,
 		is_fulfilled BOOLEAN DEFAULT FALSE
-	);`, fkItemType)
+	);`, db.Schema, db.Schema, fkItemType, db.Schema)
 
 	if _, err := db.Pool.Exec(ctx, salesOrdersSQL); err != nil {
 		return fmt.Errorf("automigrate sales_orders failed: %w (user id type detected: %s)", err, userIDType)
@@ -124,7 +135,7 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 // detectColumnType queries information_schema for an existing column data type.
 func detectColumnType(ctx context.Context, db *DB, table, column, fallback string) string {
 	var dtype string
-	row := db.Pool.QueryRow(ctx, `SELECT data_type FROM information_schema.columns WHERE table_name=$1 AND column_name=$2`, table, column)
+	row := db.Pool.QueryRow(ctx, `SELECT data_type FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2 AND column_name=$3`, db.Schema, table, column)
 	if err := row.Scan(&dtype); err != nil || dtype == "" {
 		return fallback
 	}

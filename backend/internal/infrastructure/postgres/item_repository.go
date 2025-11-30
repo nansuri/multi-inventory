@@ -19,11 +19,12 @@ func NewItemRepository(db *DB) *ItemRepository {
 }
 
 func (r *ItemRepository) Create(ctx context.Context, item *domain.Item) error {
-	query := `
-		INSERT INTO items (name, barcode, price, location, is_halal, quantity, created_at, updated_at)
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (name, barcode, price, location, is_halal, quantity, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING id, created_at, updated_at
-	`
+	`, itemsTable)
 	err := r.db.Pool.QueryRow(ctx, query, item.Name, item.Barcode, item.Price, item.Location, item.IsHalal, item.Quantity).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -36,11 +37,12 @@ func (r *ItemRepository) Create(ctx context.Context, item *domain.Item) error {
 }
 
 func (r *ItemRepository) Update(ctx context.Context, item *domain.Item) error {
-	query := `
-		UPDATE items
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`
+		UPDATE %s
 		SET name = $1, barcode = $2, price = $3, location = $4, is_halal = $5, quantity = $6, updated_at = NOW()
 		WHERE id = $7
-	`
+	`, itemsTable)
 	cmdTag, err := r.db.Pool.Exec(ctx, query, item.Name, item.Barcode, item.Price, item.Location, item.IsHalal, item.Quantity, item.ID)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -56,7 +58,8 @@ func (r *ItemRepository) Update(ctx context.Context, item *domain.Item) error {
 }
 
 func (r *ItemRepository) Delete(ctx context.Context, id int64) error {
-	query := `DELETE FROM items WHERE id = $1`
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`DELETE FROM %s WHERE id = $1`, itemsTable)
 	cmdTag, err := r.db.Pool.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete item: %w", err)
@@ -68,11 +71,12 @@ func (r *ItemRepository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *ItemRepository) GetByID(ctx context.Context, id int64) (*domain.Item, error) {
-	query := `
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, name, barcode, price, location, is_halal, quantity, created_at, updated_at
-		FROM items
+		FROM %s
 		WHERE id = $1
-	`
+	`, itemsTable)
 	var item domain.Item
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
 		&item.ID, &item.Name, &item.Barcode, &item.Price, &item.Location, &item.IsHalal, &item.Quantity, &item.CreatedAt, &item.UpdatedAt,
@@ -87,11 +91,12 @@ func (r *ItemRepository) GetByID(ctx context.Context, id int64) (*domain.Item, e
 }
 
 func (r *ItemRepository) GetByBarcode(ctx context.Context, barcode string) (*domain.Item, error) {
-	query := `
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, name, barcode, price, location, is_halal, quantity, created_at, updated_at
-		FROM items
+		FROM %s
 		WHERE barcode = $1
-	`
+	`, itemsTable)
 	var item domain.Item
 	err := r.db.Pool.QueryRow(ctx, query, barcode).Scan(
 		&item.ID, &item.Name, &item.Barcode, &item.Price, &item.Location, &item.IsHalal, &item.Quantity, &item.CreatedAt, &item.UpdatedAt,
@@ -106,11 +111,12 @@ func (r *ItemRepository) GetByBarcode(ctx context.Context, barcode string) (*dom
 }
 
 func (r *ItemRepository) List(ctx context.Context) ([]*domain.Item, error) {
-	query := `
+	itemsTable := fmt.Sprintf("%s.items", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, name, barcode, price, location, is_halal, quantity, created_at, updated_at
-		FROM items
+		FROM %s
 		ORDER BY name ASC
-	`
+	`, itemsTable)
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list items: %w", err)

@@ -19,11 +19,12 @@ func NewUserRepository(db *DB) *UserRepository {
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
-	query := `
-		INSERT INTO users (username, password, role, created_at, updated_at)
+	usersTable := fmt.Sprintf("%s.users", r.db.Schema)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (username, password, role, created_at, updated_at)
 		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at
-	`
+	`, usersTable)
 	err := r.db.Pool.QueryRow(ctx, query, user.Username, user.Password, user.Role).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -36,11 +37,12 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 }
 
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
-	query := `
+	usersTable := fmt.Sprintf("%s.users", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, username, password, role, created_at, updated_at
-		FROM users
+		FROM %s
 		WHERE username = $1
-	`
+	`, usersTable)
 	var user domain.User
 	err := r.db.Pool.QueryRow(ctx, query, username).Scan(
 		&user.ID, &user.Username, &user.Password, &user.Role, &user.CreatedAt, &user.UpdatedAt,
@@ -55,11 +57,12 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 }
 
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, error) {
-	query := `
+	usersTable := fmt.Sprintf("%s.users", r.db.Schema)
+	query := fmt.Sprintf(`
 		SELECT id, username, password, role, created_at, updated_at
-		FROM users
+		FROM %s
 		WHERE id = $1
-	`
+	`, usersTable)
 	var user domain.User
 	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
 		&user.ID, &user.Username, &user.Password, &user.Role, &user.CreatedAt, &user.UpdatedAt,
