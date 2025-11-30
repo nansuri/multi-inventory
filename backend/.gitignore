@@ -1,0 +1,10 @@
+.env
+main
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+testtest.db

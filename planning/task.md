@@ -1,0 +1,27 @@
+# Task List: Multi Inventory Management System MVP
+
+- [ ] Project Initialization & Planning <!-- id: 0 -->
+    - [x] Create `implementation_plan.md` and get approval <!-- id: 1 -->
+    - [x] Set up project directory structure (frontend, backend) <!-- id: 2 -->
+    - [x] Create `docker-compose.yml` for dev environment (Postgres, etc.) <!-- id: 3 -->
+- [x] Backend Foundation (Golang DDD) <!-- id: 4 -->
+    - [x] Initialize Go module and folder structure (cmd, internal, pkg) <!-- id: 5 -->
+    - [x] Implement Database connection and migrations <!-- id: 6 -->
+    - [x] Implement Authentication (Login/Register) <!-- id: 7 -->
+- [x] Frontend Foundation (Vue 3 Mobile) <!-- id: 8 -->
+    - [x] Initialize Vue 3 project (Vite) <!-- id: 9 -->
+    - [x] Setup Mobile UI Framework (e.g., Vant or Tailwind mobile config) <!-- id: 10 -->
+    - [x] Implement Layout (Sidebar/Bottom Nav, Header) <!-- id: 11 -->
+    - [x] Implement Login/Register Pages <!-- id: 12 -->
+- [x] Inventory Management Feature <!-- id: 13 -->
+    - [x] Backend: Inventory CRUD & Domain Logic <!-- id: 14 -->
+    - [x] Frontend: Inventory List & Details <!-- id: 15 -->
+    - [x] Frontend: Barcode Scanner Integration <!-- id: 16 -->
+    - [x] Frontend: Add/Edit Item Forms <!-- id: 17 -->
+- [x] Sales Management Feature <!-- id: 18 -->
+    - [x] Backend: Sales Order CRUD & Domain Logic <!-- id: 19 -->
+    - [x] Frontend: Sales Order List & Creation <!-- id: 20 -->
+    - [x] Frontend: Order Checker Mode <!-- id: 21 -->
+- [x] Verification & Polish <!-- id: 22 -->
+    - [x] Manual walkthrough of all features <!-- id: 23 -->
+    - [x] Create `walkthrough.md` <!-- id: 24 -->
