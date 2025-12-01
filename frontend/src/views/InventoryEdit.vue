@@ -78,7 +78,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { showToast, showConfirmDialog } from 'vant';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { apiBase } from '../config/api';
 
 const route = useRoute();
 const router = useRouter();

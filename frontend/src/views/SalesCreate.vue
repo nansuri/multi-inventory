@@ -41,7 +41,7 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast } from 'vant';
 import BarcodeScanner from '../components/BarcodeScanner.vue';
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { apiBase } from '../config/api';
 
 const router = useRouter();
 const cart = ref([]);

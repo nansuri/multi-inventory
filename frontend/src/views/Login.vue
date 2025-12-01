@@ -41,7 +41,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { showToast, showSuccessToast, showFailToast } from 'vant';
-const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { apiBase } from '../config/api';
 
 const username = ref('');
 const password = ref('');

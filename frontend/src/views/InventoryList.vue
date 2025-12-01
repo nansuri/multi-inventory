@@ -37,6 +37,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { showToast } from 'vant';
+import { apiBase } from '../config/api';
 
 const list = ref([]);
 const loading = ref(false);
@@ -62,7 +63,7 @@ const onLoad = async () => {
     }
     
     try {
-        const response = await fetch('http://localhost:8080/api/inventory');
+        const response = await fetch(`${apiBase}/api/inventory`);
         if (!response.ok) throw new Error('Failed to fetch items');
         const data = await response.json();
         list.value = data || [];

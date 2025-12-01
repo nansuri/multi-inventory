@@ -45,6 +45,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { showToast } from 'vant';
+import { apiBase } from '../config/api';
 
 const route = useRoute();
 const order = ref(null);
@@ -52,7 +53,7 @@ const fulfilledItems = ref([]);
 
 const loadOrder = async () => {
     try {
-        const response = await fetch(`http://localhost:8080/api/sales/${route.params.id}`);
+        const response = await fetch(`${apiBase}/api/sales/${route.params.id}`);
         if (!response.ok) throw new Error('Failed to load order');
         const data = await response.json();
         order.value = data;
@@ -77,7 +78,7 @@ const toggle = async (item) => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/api/sales/items/${item.id}/fulfillment`, {
+        const response = await fetch(`${apiBase}/api/sales/items/${item.id}/fulfillment`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

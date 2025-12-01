@@ -35,6 +35,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { showToast } from 'vant';
+import { apiBase } from '../config/api';
 
 const list = ref([]);
 const loading = ref(false);
@@ -61,7 +62,7 @@ const onLoad = async () => {
     }
     
     try {
-        const response = await fetch('http://localhost:8080/api/sales');
+        const response = await fetch(`${apiBase}/api/sales`);
         if (!response.ok) throw new Error('Failed to fetch orders');
         const data = await response.json();
         list.value = data || [];
