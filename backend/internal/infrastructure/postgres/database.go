@@ -87,7 +87,7 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 
 	// GORM automigrate with config to skip constraint name changes
 	migrator := db.Gorm.WithContext(ctx).Migrator()
-	
+
 	// Check if tables exist, if they do, skip automigrate (use SQL migrations instead)
 	if migrator.HasTable(&UserModel{}) {
 		// Tables already exist from SQL migrations, skip GORM automigrate
