@@ -85,7 +85,16 @@ func (db *DB) AutoMigrate(ctx context.Context) error {
 		return fmt.Errorf("failed to ensure pgcrypto: %w", err)
 	}
 
-	// GORM automigrate
+	// GORM automigrate with config to skip constraint name changes
+	migrator := db.Gorm.WithContext(ctx).Migrator()
+	
+	// Check if tables exist, if they do, skip automigrate (use SQL migrations instead)
+	if migrator.HasTable(&UserModel{}) {
+		// Tables already exist from SQL migrations, skip GORM automigrate
+		return nil
+	}
+
+	// Only run automigrate if tables don't exist
 	if err := db.Gorm.WithContext(ctx).AutoMigrate(
 		&UserModel{},
 		&ItemModel{},
